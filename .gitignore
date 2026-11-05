@@ -1,9 +1,0 @@
-node_modules/
-dist/
-out/
-release/
-*.sqlite
-.env
-
-.backend-staging/
-diagnostico/
