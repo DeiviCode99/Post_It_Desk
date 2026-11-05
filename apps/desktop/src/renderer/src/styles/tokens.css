@@ -1,0 +1,63 @@
+/*
+ * Tokens de diseño. El panel es "tinta" (azul profundo); las tareas abiertas
+ * son papel. La prioridad tiene dos tonos: uno saturado para marcas pequeñas
+ * (círculos, puntos) y uno suave para superficies grandes (la hoja).
+ */
+:root {
+  /* Tinta: superficies del panel */
+  --ink-950: #141c2f;
+  --ink-900: #1c2640;
+  --ink-800: #24314f;
+  --ink-700: #2e3d61;
+  --ink-line: #34446b;
+
+  /* Texto */
+  --text: #eef1f6;
+  --text-muted: #a3afc5;
+  --text-faint: #8a96ae; /* ≥4.5:1 sobre --ink-900 */
+  --on-paper: #1c2640;
+  --on-paper-muted: #4a5675;
+
+  /* Prioridad: marca saturada y superficie suave */
+  --mark-high: #ff8fb1;
+  --mark-medium: #ffd84d;
+  --mark-low: #7fd8ae;
+  --mark-none: #a3afc5;
+  --paper-high: #ffe1eb;
+  --paper-medium: #fff3c4;
+  --paper-low: #dcf5e8;
+  --paper-none: #f1f4f8;
+
+  --danger: #e5484d;
+  --danger-soft: #ff9b9e;
+  --focus: #8ec5ff;
+
+  --font-ui: 'Atkinson Hyperlegible', 'Segoe UI', sans-serif;
+  --font-hand: 'Patrick Hand', 'Segoe Print', cursive;
+
+  /* Escala tipográfica (razón ~1.15, propia de interfaces de trabajo) */
+  --step--2: 0.75rem;
+  --step--1: 0.8125rem;
+  --step-0: 0.9375rem;
+  --step-1: 1.0625rem;
+  --step-2: 1.3125rem;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 28px;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Cada clase priority-* expone su par de colores a quien la use. */
+.priority-high { --mark: var(--mark-high); --paper: var(--paper-high); }
+.priority-medium { --mark: var(--mark-medium); --paper: var(--paper-medium); }
+.priority-low { --mark: var(--mark-low); --paper: var(--paper-low); }
+.priority-none { --mark: var(--mark-none); --paper: var(--paper-none); }

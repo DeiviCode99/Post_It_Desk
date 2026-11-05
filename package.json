@@ -1,0 +1,13 @@
+{
+  "name": "postit-desk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Notas tipo post-it en el borde de la pantalla. Monolito modular: backend NestJS + escritorio Electron/React.",
+  "scripts": {
+    "install:all": "npm install --prefix apps/backend && npm install --prefix apps/desktop",
+    "build:backend": "npm run build --prefix apps/backend",
+    "test": "npm test --prefix apps/backend",
+    "dev": "npm run build:backend && npm run dev --prefix apps/desktop",
+    "dist": "npm run build:backend && npm run dist --prefix apps/desktop"
+  }
+}

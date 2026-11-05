@@ -1,0 +1,841 @@
+/* =========================================================================
+   Base y superficies del navegador (selección, cursor, scroll, foco)
+   ========================================================================= */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: transparent;
+  color: var(--text);
+  font: var(--step-0) / 1.45 var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+  caret-color: var(--focus);
+}
+
+::selection { background: color-mix(in srgb, var(--focus) 40%, transparent); }
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button { cursor: pointer; }
+
+h1, h2, h3, p { margin: 0; }
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-thumb {
+  background: var(--ink-line);
+  border: 3px solid transparent;
+  border-radius: 6px;
+  background-clip: padding-box;
+}
+
+.count { font-variant-numeric: tabular-nums; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* =========================================================================
+   Pestaña del borde (panel oculto)
+   ========================================================================= */
+.edge-handle {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  height: 100vh;
+  padding: 12px 4px 12px 6px;
+  border-radius: 12px 0 0 12px;
+  background: var(--ink-900);
+  box-shadow: inset 1px 0 0 rgb(255 255 255 / 0.08), inset 0 1px 0 rgb(255 255 255 / 0.05);
+  cursor: pointer;
+  animation: tab-in 220ms var(--ease-out);
+}
+
+@keyframes tab-in {
+  from { transform: translateX(100%); }
+}
+
+.edge-handle__mark {
+  flex: 1;
+  min-height: 6px;
+  max-height: 22px;
+  border-radius: 3px;
+  background: var(--mark);
+}
+
+.edge-handle__mark.is-overdue { background: var(--danger); }
+
+.edge-handle__mark--empty {
+  flex: 0 0 24px;
+  background: var(--ink-line);
+}
+
+/* =========================================================================
+   Disposición
+   ========================================================================= */
+.app {
+  display: flex;
+  justify-content: flex-end;
+  height: 100vh;
+  padding: 10px 10px 10px 0;
+}
+
+/*
+ * Panel flotante con esquinas redondeadas. Radio de 24px = 8px de los
+ * controles internos + 16px de margen: esquinas concéntricas.
+ */
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: 340px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 24px;
+  background: var(--ink-900);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.07),
+    0 4px 12px rgb(4 8 18 / 0.3),
+    0 24px 48px -12px rgb(4 8 18 / 0.55);
+  animation: panel-in 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Entra deslizándose desde el borde de la pantalla, como un cajón. */
+@keyframes panel-in {
+  from {
+    transform: translateX(calc(100% + 12px));
+    opacity: 0.4;
+  }
+}
+
+/* Sale hacia el borde; luego Electron encoge la ventana (ver useEdgeMode). */
+@keyframes panel-out {
+  to {
+    transform: translateX(calc(100% + 12px));
+    opacity: 0.4;
+  }
+}
+
+@keyframes sheet-out {
+  to {
+    transform: translateX(24px) rotate(-0.5deg);
+    opacity: 0;
+  }
+}
+
+.app.is-closing .panel { animation: panel-out 200ms cubic-bezier(0.4, 0, 1, 1) forwards; }
+.app.is-closing .sheet { animation: sheet-out 160ms cubic-bezier(0.4, 0, 1, 1) forwards; }
+
+.panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-3) var(--space-3) var(--space-5);
+}
+
+.panel__title {
+  font-size: var(--step-2);
+  font-weight: 700;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.panel__summary {
+  margin-top: 2px;
+  font-size: var(--step--1);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.panel__error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0 var(--space-4) var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--danger) 18%, var(--ink-900));
+  font-size: var(--step--1);
+}
+
+.panel__error span { flex: 1; }
+
+.panel__scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: var(--space-4);
+}
+
+/* =========================================================================
+   Captura rápida
+   ========================================================================= */
+.quick-add {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 var(--space-4) var(--space-3);
+  padding: 0 var(--space-3);
+  border-radius: 12px;
+  background: var(--ink-950);
+  box-shadow: inset 0 0 0 1px var(--ink-line);
+  color: var(--text-faint);
+  transition: box-shadow 150ms, background-color 150ms;
+}
+
+.quick-add:focus-within {
+  background: var(--ink-800);
+  box-shadow: inset 0 0 0 1px var(--focus);
+  color: var(--focus);
+}
+
+.quick-add input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  outline: none;
+}
+
+.quick-add input::placeholder { color: var(--text-faint); }
+
+/* =========================================================================
+   Barra de vista, búsqueda y etiquetas
+   ========================================================================= */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 0 var(--space-3) 0 var(--space-4);
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  background: var(--ink-950);
+}
+
+.segmented button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 5px; /* 8px del contenedor menos 3px de padding: radios concéntricos */
+  background: transparent;
+  font-size: var(--step--1);
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: background-color 150ms, color 150ms;
+}
+
+.segmented button:hover { color: var(--text); }
+
+.segmented button[aria-selected='true'] {
+  background: var(--ink-700);
+  color: var(--text);
+}
+
+.segmented .count {
+  font-weight: 400;
+  color: var(--text-faint);
+}
+
+.search {
+  display: block;
+  width: calc(100% - 2 * var(--space-4));
+  margin: var(--space-2) var(--space-4) 0;
+  padding: 7px var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--ink-950);
+  box-shadow: inset 0 0 0 1px var(--ink-line);
+  outline: none;
+}
+
+.search:focus { box-shadow: inset 0 0 0 1px var(--focus); }
+.search::placeholder { color: var(--text-faint); }
+
+.tag-filter {
+  display: flex;
+  gap: 6px;
+  padding: var(--space-2) var(--space-4) 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--ink-line);
+  font-size: var(--step--2);
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: background-color 150ms, color 150ms;
+}
+
+.chip:hover { color: var(--text); }
+
+.chip[aria-pressed='true'] {
+  background: var(--ink-700);
+  box-shadow: inset 0 0 0 1px var(--text-faint);
+  color: var(--text);
+}
+
+.tag-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* =========================================================================
+   Grupos y filas de tareas
+   ========================================================================= */
+.group { margin-top: var(--space-4); }
+
+.group__title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: 0 var(--space-4) var(--space-1);
+  font-size: var(--step--1);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.group__title .count {
+  font-weight: 400;
+  color: var(--text-faint);
+}
+
+.group--overdue .group__title { color: var(--danger-soft); }
+
+.task-list {
+  margin: 0;
+  padding: 0 var(--space-2);
+  list-style: none;
+}
+
+.task-list:first-child { margin-top: var(--space-3); }
+
+.task {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  align-items: start;
+  border-radius: var(--radius-md);
+  transition: background-color 120ms;
+}
+
+.task:hover { background: var(--ink-800); }
+.task.is-selected { background: var(--ink-700); }
+
+/* Botón de completar: área de 36×40 px alrededor de un círculo de 18 px. */
+.task__check {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.task__ring {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--mark);
+  color: transparent;
+  transition: background-color 160ms var(--ease-out), color 160ms, scale 160ms var(--ease-out);
+}
+
+.task__check:hover .task__ring {
+  background: color-mix(in srgb, var(--mark) 22%, transparent);
+  color: color-mix(in srgb, var(--mark) 80%, transparent);
+}
+
+.task__check:active .task__ring { scale: 0.92; }
+
+.task__check[aria-checked='true'] .task__ring {
+  background: var(--mark);
+  color: var(--ink-900);
+}
+
+.task__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px var(--space-3) 10px 2px;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+
+.task__title {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.35;
+  transition: color 200ms;
+}
+
+.task.is-done .task__title {
+  color: var(--text-faint);
+  text-decoration: line-through;
+  text-decoration-color: var(--text-faint);
+}
+
+.task__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+  font-size: var(--step--2);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.task__meta .is-overdue {
+  color: var(--danger-soft);
+  font-weight: 700;
+}
+
+.task__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.task__tag .tag-dot { width: 6px; height: 6px; }
+
+.empty {
+  margin: var(--space-6) var(--space-4) 0;
+  font-size: var(--step--1);
+  line-height: 1.5;
+  color: var(--text-muted);
+  max-width: 34ch;
+}
+
+.empty__title {
+  margin-bottom: var(--space-1);
+  font-size: var(--step-1);
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* =========================================================================
+   Botones
+   ========================================================================= */
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  transition: background-color 150ms, color 150ms;
+}
+
+.icon-btn:hover { background: var(--ink-700); color: var(--text); }
+.icon-btn.is-active { color: var(--mark-medium); }
+.icon-btn--small { width: 28px; height: 28px; }
+.icon-btn--small svg { width: 14px; height: 14px; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  font-size: var(--step--1);
+  font-weight: 700;
+  transition: background-color 150ms, color 150ms;
+}
+
+.btn:active { scale: 0.96; }
+
+.btn--quiet {
+  background: transparent;
+  color: var(--on-paper-muted);
+}
+
+.btn--quiet:hover {
+  background: color-mix(in srgb, var(--on-paper) 8%, transparent);
+  color: var(--on-paper);
+}
+
+.btn--danger { background: var(--danger); color: #fff; }
+.btn--danger:hover { background: color-mix(in srgb, var(--danger) 88%, #000); }
+
+/* =========================================================================
+   Mesa y hoja de la tarea
+   ========================================================================= */
+.desk {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-4) var(--space-6) var(--space-6);
+  background: transparent;
+  scrollbar-width: none;
+}
+
+/*
+ * El gesto de la app: la hoja se despliega desde el panel y queda apenas
+ * inclinada, como un post-it pegado. Es la única animación de entrada.
+ */
+.sheet {
+  max-width: 440px;
+  margin-left: auto;
+  padding: var(--space-4) var(--space-5) var(--space-4);
+  border-radius: 18px;
+  background: var(--paper);
+  color: var(--on-paper);
+  transform: rotate(-0.5deg);
+  transform-origin: right center;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.6),
+    0 2px 6px rgb(4 8 18 / 0.25),
+    0 28px 56px -18px rgb(4 8 18 / 0.6);
+  user-select: text;
+  caret-color: var(--on-paper);
+  animation: sheet-unfold 240ms var(--ease-out);
+}
+
+@keyframes sheet-unfold {
+  from {
+    opacity: 0;
+    transform: perspective(900px) rotateY(-55deg);
+  }
+}
+
+.sheet .icon-btn { color: var(--on-paper-muted); }
+.sheet .icon-btn:hover {
+  background: color-mix(in srgb, var(--on-paper) 8%, transparent);
+  color: var(--on-paper);
+}
+
+.sheet ::placeholder { color: var(--on-paper-muted); opacity: 0.8; }
+
+.sheet__head {
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
+  align-items: start;
+  gap: var(--space-1);
+  margin-left: -10px;
+}
+
+.task__check--sheet { height: 34px; }
+.task__check--sheet .task__ring {
+  width: 20px;
+  height: 20px;
+  box-shadow: inset 0 0 0 2px var(--on-paper);
+}
+.task__check--sheet:hover .task__ring { background: color-mix(in srgb, var(--on-paper) 12%, transparent); color: var(--on-paper-muted); }
+.task__check--sheet[aria-checked='true'] .task__ring { background: var(--on-paper); color: var(--paper); }
+
+.sheet__title {
+  width: 100%;
+  min-height: 34px;
+  padding: 3px 0;
+  border: 0;
+  resize: none;
+  overflow: hidden;
+  /* La altura sigue al contenido y se recalcula si cambia el ancho de la ventana. */
+  field-sizing: content;
+  background: transparent;
+  font-size: var(--step-2);
+  font-weight: 700;
+  line-height: 1.3;
+  text-wrap: balance;
+  outline: none;
+}
+
+.sheet.is-done .sheet__title {
+  text-decoration: line-through;
+  color: var(--on-paper-muted);
+}
+
+/* Propiedades: rótulo a la izquierda, control a la derecha, filas compactas. */
+.props {
+  display: grid;
+  gap: 6px;
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) 0;
+  border-block: 1px solid color-mix(in srgb, var(--on-paper) 14%, transparent);
+}
+
+.props__row {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  align-items: center;
+  min-height: 32px;
+}
+
+.props__row--top { align-items: start; }
+.props__row--top dt { padding-top: 5px; }
+
+.props dt {
+  font-size: var(--step--1);
+  font-weight: 700;
+  color: var(--on-paper-muted);
+}
+
+.props dd { margin: 0; min-width: 0; }
+
+.props input[type='datetime-local'],
+.props select {
+  width: 100%;
+  height: 32px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, #fff 55%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--on-paper) 16%, transparent);
+  color: var(--on-paper);
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+}
+
+.props select:disabled { opacity: 0.6; }
+
+/* Prioridad: opciones con punto de color y nombre. */
+.priority-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.priority-picker__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, #fff 45%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--on-paper) 14%, transparent);
+  font-size: var(--step--2);
+  font-weight: 700;
+  color: var(--on-paper);
+  transition: background-color 150ms, color 150ms;
+}
+
+.priority-picker__option:hover { background: color-mix(in srgb, #fff 75%, transparent); }
+
+.priority-picker__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--mark);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12);
+}
+
+.priority-picker__option[aria-checked='true'] {
+  background: var(--on-paper);
+  box-shadow: none;
+  color: var(--paper-none);
+}
+
+/* Etiquetas sobre papel */
+.tag-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.chip--paper {
+  height: 28px;
+  background: color-mix(in srgb, #fff 45%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--on-paper) 14%, transparent);
+  color: var(--on-paper);
+}
+
+.chip--paper:hover { color: var(--on-paper); background: color-mix(in srgb, #fff 75%, transparent); }
+
+.chip--paper[aria-pressed='true'] {
+  background: var(--on-paper);
+  box-shadow: none;
+  color: var(--paper-none);
+}
+
+.tag-picker__new {
+  width: 84px;
+  height: 28px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--on-paper) 22%, transparent);
+  font-size: var(--step--2);
+  outline: none;
+}
+
+.tag-picker__new:focus { width: 140px; box-shadow: inset 0 0 0 1px var(--on-paper); }
+
+/* Secciones de la hoja */
+.sheet__section { margin-top: var(--space-4); }
+
+.sheet__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--space-1);
+  font-size: var(--step--1);
+  font-weight: 700;
+  color: var(--on-paper-muted);
+}
+
+.sheet__heading .count { font-weight: 400; }
+
+/* Subtareas */
+.checklist ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checklist li {
+  display: grid;
+  grid-template-columns: 24px 1fr 28px;
+  align-items: center;
+  border-radius: var(--radius-sm);
+}
+
+.checklist li:hover { background: color-mix(in srgb, var(--on-paper) 5%, transparent); }
+
+.checklist input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  margin: 0 0 0 2px;
+  accent-color: var(--on-paper);
+}
+
+.checklist li .icon-btn { opacity: 0; }
+.checklist li:hover .icon-btn,
+.checklist li:focus-within .icon-btn { opacity: 1; }
+
+.checklist li.is-done .checklist__text {
+  text-decoration: line-through;
+  color: var(--on-paper-muted);
+}
+
+.checklist__text,
+.checklist__add {
+  min-width: 0;
+  height: 30px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  outline: none;
+}
+
+.checklist__add {
+  width: 100%;
+  margin-top: 2px;
+  padding-left: 26px;
+  border-radius: var(--radius-sm);
+}
+
+.checklist__add:focus { background: color-mix(in srgb, #fff 45%, transparent); }
+
+/* Notas a mano sobre renglones */
+.sheet__body {
+  display: block;
+  width: 100%;
+  min-height: 112px;
+  /* Crece con lo que se escribe; desde 40% de la pantalla aparece scroll interno. */
+  field-sizing: content;
+  max-height: 40vh;
+  padding: 0;
+  border: 0;
+  resize: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 27px,
+    color-mix(in srgb, var(--on-paper) 13%, transparent) 27px 28px
+  );
+  font: 1.1875rem / 28px var(--font-hand);
+  outline: none;
+}
+
+.sheet__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid color-mix(in srgb, var(--on-paper) 14%, transparent);
+}
+
+.sheet__created {
+  font-size: var(--step--2);
+  color: var(--on-paper-muted);
+}
+
+.confirm { display: inline-flex; gap: var(--space-1); }
+
+/* =========================================================================
+   Movimiento reducido
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .edge-handle,
+  .panel,
+  .app.is-closing .panel,
+  .app.is-closing .sheet,
+  .sheet { animation: none; }
+  .task,
+  .task__ring,
+  .task__title { transition: none; }
+}

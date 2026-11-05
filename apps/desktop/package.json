@@ -1,0 +1,60 @@
+{
+  "name": "postit-desk",
+  "productName": "Postit Desk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Notas tipo post-it en el borde de la pantalla",
+  "author": "David",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "dist": "npm run typecheck && node scripts/stage-backend.mjs && electron-vite build && electron-builder --win"
+  },
+  "dependencies": {
+    "@fontsource/atkinson-hyperlegible": "^5.0.20",
+    "@fontsource/patrick-hand": "^5.0.20",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "electron": "^44.0.0",
+    "electron-builder": "^26.18.0",
+    "electron-vite": "^6.0.0",
+    "typescript": "^5.5.0",
+    "vite": "^7.3.7"
+  },
+  "build": {
+    "appId": "com.david.postitdesk",
+    "productName": "Postit Desk",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources",
+        "to": "resources"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true
+    },
+    "afterPack": "scripts/after-pack.cjs"
+  }
+}
