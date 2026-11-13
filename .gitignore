@@ -1,0 +1,5 @@
+dist/
+node_modules/
+diagnostico/
+.backend-staging/
+release/
